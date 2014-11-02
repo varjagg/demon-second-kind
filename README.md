@@ -1,7 +1,9 @@
 Demon of the Second Kind
 =================
 
-Demon of the second kind, yielding text from entropy source. Inspired by Stanislaw Lem's _Cyberiad_
+Demon of the second kind, yielding legible text from entropy source. Inspired by Stanislaw Lem's _Cyberiad_
+
+Currently uses /dev/urandom.
 
 Makes use of SPLIT-SEQUENCE and BTRIE packages.
 
