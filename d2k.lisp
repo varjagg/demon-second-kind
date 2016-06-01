@@ -19,11 +19,11 @@
 	(cons node (follow sub entropy))
 	nil)))
 
-(defun demon ()
+(defun demon (&optional (min-length 3))
   (with-open-file (entropy "/dev/urandom" :direction :input :element-type '(unsigned-byte 8))
     (loop for chant = (coerce (follow *word-trie* entropy) 'string)
        do
-	 (when (> (length chant) 2)
+	 (when (>= (length chant) min-length)
 	   (when (find chant *wordlist* :test #'string=) ;making sure it's a complete word
 	    (cond ((and (= (length chant) 3) (= (random 50) 1))
 		   (format t "~%~A" chant))
