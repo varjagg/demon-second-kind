@@ -34,3 +34,21 @@
 			      #'< :key #'length)))
   (setq *word-trie* (btrie:make-trie *wordlist*))
   nil)
+
+(defun canonicalize-token (string)
+  "Remove non-alphabetic characters from the string and make it upcase"
+  (nstring-upcase (remove-if-not #'alpha-char-p string)))
+
+(defun demonkey (&optional (text-path "shakespeare_lovers_complaint.txt"))
+  (with-open-file (s text-path :direction :input)
+    (let ((text (loop for line = (read-line s nil) while line
+		   nconc (split-sequence:split-sequence #\Space line :remove-empty-subseqs t))))
+      (with-open-file (entropy "/dev/random" :direction :input :element-type '(unsigned-byte 8))
+	(loop for token = (pop text)
+	   for canonical = (canonicalize-token token)
+	   do (loop with pos = 0
+		 for char = (code-char (logand (read-byte entropy) 127))
+		 until (= pos (length canonical))
+		 if (char-equal (aref canonical pos) char) do (incf pos)
+		 else do (setf pos 0))
+	     (format t "~A " token))))))
