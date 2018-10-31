@@ -66,7 +66,7 @@
 	   for num-bytes = (ceiling num-bits 8)
 	   do (loop
 		 for rands = (chain-bits (loop repeat num-bytes collecting (read-byte entropy))) then (let ((new (logand expanded-mask (ash rands 1))))
-													(if (zerop (logand 8 new)) ;shifted a byte out
+													(if (zerop (logand 255 new)) ;shifted a byte out
 													    (logior new (read-byte entropy))
 													    new))
 		 until (= canonical (ash rands -8)))
