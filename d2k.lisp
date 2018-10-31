@@ -35,9 +35,23 @@
   (setq *word-trie* (btrie:make-trie *wordlist*))
   nil)
 
+(declaim (inline fivebit canonicalize-token chain-bits))
+
+(defun fivebit (code)
+  (logand code 31))
+
+(defun chain-bits (bits)
+  (reduce #'(lambda (a &optional b)
+	      (if b (logior (ash a 5) b) a))
+	  bits))
+
+(defun chain-string (string)
+  (chain-bits (map 'list #'(lambda (x) (fivebit (char-code x))) string)))
+
 (defun canonicalize-token (string)
-  "Remove non-alphabetic characters from the string and make it upcase"
-  (nstring-upcase (remove-if-not #'alpha-char-p string)))
+  "Return bit-sequence of 5 bit alpha char segments"
+  (let ((alphas (remove-if-not #'alpha-char-p string)))
+    (chain-string alphas)))
 
 (defun demonkey (&optional (text-path "shakespeare_lovers_complaint.txt"))
   (with-open-file (s text-path :direction :input)
@@ -46,9 +60,14 @@
       (with-open-file (entropy "/dev/random" :direction :input :element-type '(unsigned-byte 8))
 	(loop for token = (pop text)
 	   for canonical = (canonicalize-token token)
-	   do (loop with pos = 0
-		 for char = (code-char (logand (read-byte entropy) 127))
-		 until (= pos (length canonical))
-		 if (char-equal (aref canonical pos) char) do (incf pos)
-		 else do (setf pos 0))
+	   for num-bits = (1+ (floor (log canonical 2)))
+	   for mask = (1- (expt 2 num-bits))
+	   for expanded-mask = (1- (expt 2 (+ num-bits 8)))
+	   for num-bytes = (ceiling num-bits 8)
+	   do (loop
+		 for rands = (chain-bits (loop repeat num-bytes collecting (read-byte entropy))) then (let ((new (logand expanded-mask (ash rands 1))))
+													(if (zerop (logand 8 new)) ;shifted a byte out
+													    (logior new (read-byte entropy))
+													    new))
+		 until (= canonical (ash rands -8)))
 	     (format t "~A " token))))))
